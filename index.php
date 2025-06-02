@@ -5,7 +5,7 @@ if ($usar_sqlserver) {
     // --- Conexión SQL Server Azure ---
     $serverName = "tcp:serverlalo.database.windows.net,1433";
     $connectionInfo = array(
-        "UID" => "lalo",
+        "UID" => "lalon",
         "pwd" => "Lalopass17062004@", // Cambia aquí tu contraseña real
         "Database" => "proy",
         "LoginTimeout" => 30,
