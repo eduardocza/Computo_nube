@@ -165,9 +165,9 @@
 
         <?php
         $host = "10.10.0.4"; // IP de tu servidor MySQL (Linux)
-        $dbname = "proyecto";
-        $username = "usuarioP";
-        $password = "root";
+        $dbname = "proy";
+        $username = "lalon";
+        $password = "Lalopass17062004@";
 
         try {
             $conn = new PDO("mysql:host=$host;dbname=$dbname", $username, $password);
