@@ -2,9 +2,9 @@
 // --- Conexión a SQL Server ---
 $servidor = "tcp:formdb.database.windows.net,1433";
 $opciones = array(
-    "Database" => "formdb",
-    "UID" => "virgilio",
-    "PWD" => "Jesus-1234",
+    "Database" => "proy",
+    "UID" => "lalon",
+    "PWD" => "Lalopass17062004@",
     "CharacterSet" => "UTF-8"
 );
 
