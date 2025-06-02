@@ -1,3 +1,56 @@
+<?php
+// --- Conexión a SQL Server ---
+$servidor = "tcp:formdb.database.windows.net,1433";
+$opciones = array(
+    "Database" => "formdb",
+    "UID" => "virgilio",
+    "PWD" => "Jesus-1234",
+    "CharacterSet" => "UTF-8"
+);
+
+$conexion = sqlsrv_connect($servidor, $opciones);
+
+if ($conexion === false) {
+    die(print_r(sqlsrv_errors(), true));
+}
+
+// Crear tabla si no existe
+$crearTablaSQL = "
+IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='usuarios' AND xtype='U')
+CREATE TABLE usuarios (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    nombre NVARCHAR(50) NOT NULL,
+    primer_apellido NVARCHAR(50) NOT NULL,
+    segundo_apellido NVARCHAR(50),
+    correo NVARCHAR(100) NOT NULL,
+    telefono NVARCHAR(20) NOT NULL,
+    fecha_registro DATETIME DEFAULT GETDATE()
+)";
+sqlsrv_query($conexion, $crearTablaSQL);
+
+// Procesar formulario
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['enviar'])) {
+    $nombre = $_POST['nombre'];
+    $primer_apellido = $_POST['primer_apellido'];
+    $segundo_apellido = $_POST['segundo_apellido'];
+    $correo = $_POST['correo'];
+    $telefono = $_POST['telefono'];
+
+    if (!empty($nombre) && !empty($primer_apellido) && !empty($correo) && !empty($telefono)) {
+        $sqlInsert = "INSERT INTO usuarios (nombre, primer_apellido, segundo_apellido, correo, telefono) 
+                      VALUES (?, ?, ?, ?, ?)";
+        $params = array($nombre, $primer_apellido, $segundo_apellido, $correo, $telefono);
+        $stmt = sqlsrv_query($conexion, $sqlInsert, $params);
+
+        if ($stmt === false) {
+            $mensajeError = print_r(sqlsrv_errors(), true);
+            $esError = true;
+        } else {
+            $esError = false;
+        }
+    }
+}
+?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -163,90 +216,58 @@
             <button type="submit" name="enviar" class="btn-submit">Enviar Datos</button>
         </form>
 
-        <?php
-        $host = "10.10.0.4"; // IP de tu servidor MySQL (Linux)
-        $dbname = "proy";
-        $username = "lalon";
-        $password = "Lalopass17062004@";
-
-        try {
-            $conn = new PDO("mysql:host=$host;dbname=$dbname", $username, $password);
-            $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
-            // Crear tabla si no existe
-            $conn->exec("CREATE TABLE IF NOT EXISTS usuarios (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                nombre VARCHAR(50) NOT NULL,
-                primer_apellido VARCHAR(50) NOT NULL,
-                segundo_apellido VARCHAR(50),
-                correo VARCHAR(100) NOT NULL,
-                telefono VARCHAR(20) NOT NULL,
-                fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )");
-
-            if (isset($_POST['enviar'])) {
-                $stmt = $conn->prepare("INSERT INTO usuarios (nombre, primer_apellido, segundo_apellido, correo, telefono)
-                                        VALUES (:nombre, :primer_apellido, :segundo_apellido, :correo, :telefono)");
-                $stmt->execute([
-                    ':nombre' => $_POST['nombre'],
-                    ':primer_apellido' => $_POST['primer_apellido'],
-                    ':segundo_apellido' => $_POST['segundo_apellido'],
-                    ':correo' => $_POST['correo'],
-                    ':telefono' => $_POST['telefono']
-                ]);
-
-                echo '<div class="response">';
-                echo '<h3>Datos guardados correctamente:</h3>';
-                echo '<p><strong>Nombre:</strong> '.htmlspecialchars($_POST['nombre']).'</p>';
-                echo '<p><strong>Primer Apellido:</strong> '.htmlspecialchars($_POST['primer_apellido']).'</p>';
-                echo '<p><strong>Segundo Apellido:</strong> '.htmlspecialchars($_POST['segundo_apellido']).'</p>';
-                echo '<p><strong>Correo:</strong> '.htmlspecialchars($_POST['correo']).'</p>';
-                echo '<p><strong>Teléfono:</strong> '.htmlspecialchars($_POST['telefono']).'</p>';
-                echo '</div>';
-                echo '<script>document.querySelector(".response").style.display = "block";</script>';
-            }
-        } catch (PDOException $e) {
-            echo '<div class="response error">';
-            echo '<h3>Error de conexion o ejecucion:</h3>';
-            echo '<p>'.htmlspecialchars($e->getMessage()).'</p>';
-            echo '</div>';
-            echo '<script>document.querySelector(".response").style.display = "block";</script>';
-        }
-        ?>
+        <?php if (isset($esError)): ?>
+            <div class="response <?php echo $esError ? 'error' : ''; ?>" style="display: block;">
+                <?php if ($esError): ?>
+                    <h3>Error al guardar:</h3>
+                    <p><?php echo htmlspecialchars($mensajeError); ?></p>
+                <?php else: ?>
+                    <h3>Datos guardados correctamente:</h3>
+                    <p><strong>Nombre:</strong> <?php echo htmlspecialchars($nombre); ?></p>
+                    <p><strong>Primer Apellido:</strong> <?php echo htmlspecialchars($primer_apellido); ?></p>
+                    <p><strong>Segundo Apellido:</strong> <?php echo htmlspecialchars($segundo_apellido); ?></p>
+                    <p><strong>Correo:</strong> <?php echo htmlspecialchars($correo); ?></p>
+                    <p><strong>Teléfono:</strong> <?php echo htmlspecialchars($telefono); ?></p>
+                <?php endif; ?>
+            </div>
+        <?php endif; ?>
     </div>
 
     <?php
-    try {
-        if (isset($conn)) {
-            // Mostrar datos en tabla
-            $stmt = $conn->query("SELECT * FROM usuarios ORDER BY id DESC");
-
-            echo '<div class="table-container">';
-            echo '<h2>Usuarios Registrados</h2>';
-            echo '<table>';
-            echo '<tr><th>ID</th><th>Nombre</th><th>Primer Apellido</th><th>Segundo Apellido</th><th>Correo</th><th>Teléfono</th><th>Fecha</th></tr>';
-            while ($fila = $stmt->fetch(PDO::FETCH_ASSOC)) {
-                echo '<tr>';
-                echo '<td>'.$fila['id'].'</td>';
-                echo '<td>'.htmlspecialchars($fila['nombre']).'</td>';
-                echo '<td>'.htmlspecialchars($fila['primer_apellido']).'</td>';
-                echo '<td>'.htmlspecialchars($fila['segundo_apellido']).'</td>';
-                echo '<td>'.htmlspecialchars($fila['correo']).'</td>';
-                echo '<td>'.htmlspecialchars($fila['telefono']).'</td>';
-                echo '<td>'.$fila['fecha_registro'].'</td>';
-                echo '</tr>';
-            }
-            echo '</table>';
-            echo '</div>';
-        }
-    } catch (PDOException $e) {
-        echo '<div class="table-container">';
-        echo '<div class="response error">';
-        echo '<h3>Error al cargar los datos:</h3>';
-        echo '<p>'.htmlspecialchars($e->getMessage()).'</p>';
-        echo '</div>';
-        echo '</div>';
-    }
+    $consultaSQL = "SELECT * FROM usuarios ORDER BY id DESC";
+    $consulta = sqlsrv_query($conexion, $consultaSQL);
     ?>
+
+    <div class="table-container">
+        <h2>Usuarios Registrados</h2>
+        <table>
+            <tr><th>ID</th><th>Nombre</th><th>Primer Apellido</th><th>Segundo Apellido</th><th>Correo</th><th>Teléfono</th><th>Fecha</th></tr>
+            <?php
+            if ($consulta === false) {
+                echo "<tr><td colspan='7'>Error al consultar.</td></tr>";
+            } else {
+                $hayDatos = false;
+                while ($fila = sqlsrv_fetch_array($consulta, SQLSRV_FETCH_ASSOC)) {
+                    $hayDatos = true;
+                    echo "<tr>
+                        <td>{$fila['id']}</td>
+                        <td>".htmlspecialchars($fila['nombre'])."</td>
+                        <td>".htmlspecialchars($fila['primer_apellido'])."</td>
+                        <td>".htmlspecialchars($fila['segundo_apellido'])."</td>
+                        <td>".htmlspecialchars($fila['correo'])."</td>
+                        <td>".htmlspecialchars($fila['telefono'])."</td>
+                        <td>".$fila['fecha_registro']->format('Y-m-d H:i:s')."</td>
+                    </tr>";
+                }
+
+                if (!$hayDatos) {
+                    echo "<tr><td colspan='7'>No hay registros.</td></tr>";
+                }
+            }
+
+            sqlsrv_close($conexion);
+            ?>
+        </table>
+    </div>
 </body>
 </html>
